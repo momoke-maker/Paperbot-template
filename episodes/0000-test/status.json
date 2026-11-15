@@ -1,0 +1,9 @@
+{
+  "episode": "0000-test",
+  "started": "2026-11-15T06:18:32Z",
+  "gemini_error": "GEMINI_API_KEY missing",
+  "model": "edge-tts",
+  "engine": "edge-tts",
+  "duration_sec": 38,
+  "telegram": "error: No chat found - send /start to the bot first"
+}
