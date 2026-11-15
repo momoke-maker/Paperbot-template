@@ -20,6 +20,8 @@ jobs:
   make:
     runs-on: ubuntu-latest
     timeout-minutes: 40
+    # skip in the template itself; in your copy it runs once the secrets exist
+    if: github.repository != 'momoke-maker/Paperbot-template' 
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

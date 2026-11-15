@@ -17,6 +17,8 @@ jobs:
   make:
     runs-on: ubuntu-latest
     timeout-minutes: 40
+    # skip in the template itself; in your copy it runs once the secrets exist
+    if: github.repository != 'momoke-maker/Paperbot-template' 
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -26,6 +28,10 @@ jobs:
         run: |
           which ffmpeg || (sudo apt-get update && sudo apt-get install -y ffmpeg)
           pip install requests edge-tts
+      - name: Check secrets
+        env:
+          T: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        run: if [ -z "$T" ]; then echo "Secrets not set yet - see README step 4"; exit 1; fi
       - name: Generate audio and send to Telegram
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
