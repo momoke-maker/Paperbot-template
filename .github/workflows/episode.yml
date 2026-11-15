@@ -10,15 +10,15 @@ permissions:
   contents: write
 
 concurrency:
-  group: episodes
+  group: make-episode   # one renderer at a time; a newer queued run covers all pending episodes
   cancel-in-progress: false
 
 jobs:
   make:
+    # skip in the template itself; in your copy it runs once the secrets exist
+    if: github.repository != 'momoke-maker/Paperbot-template'
     runs-on: ubuntu-latest
     timeout-minutes: 40
-    # skip in the template itself; in your copy it runs once the secrets exist
-    if: github.repository != 'momoke-maker/Paperbot-template' 
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -27,22 +27,19 @@ jobs:
       - name: Install
         run: |
           which ffmpeg || (sudo apt-get update && sudo apt-get install -y ffmpeg)
-          pip install requests edge-tts
+          pip install requests==2.34.2 edge-tts==7.3.1
       - name: Check secrets
         env:
-          T: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-        run: if [ -z "$T" ]; then echo "Secrets not set yet - see README step 4"; exit 1; fi
-      - name: Generate audio and send to Telegram
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        run: |
+          [ -n "$TELEGRAM_BOT_TOKEN" ] || { echo "::error::TELEGRAM_BOT_TOKEN is not set (README step 4)"; exit 1; }
+          [ -n "$GEMINI_API_KEY" ] || echo "::warning::GEMINI_API_KEY is not set - using the edge-tts voices"
+      - name: Render and send
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         run: python scripts/make_episode.py
       - name: Save results to repo
         if: always()
-        run: |
-          git config user.name "podcast-bot"
-          git config user.email "podcast-bot@users.noreply.github.com"
-          mkdir -p config && touch config/.keep
-          git add -A episodes config
-          git diff --cached --quiet || git commit -m "Episode audio + status [skip ci]"
-          git pull --rebase origin main && git push origin main
+        run: bash scripts/save_results.sh "Episode audio + status [skip ci]"

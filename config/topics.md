@@ -16,15 +16,16 @@ Selection rules:
   Basis (checked Nov 2026): SCImago SJR 2024/2025 values plus expert-curated lists (FT50, Chartered ABS
   AJG 2024, CORE conference ranking). SJR alone is not used because it underrates some flagships
   (e.g. Psychological Science 2.5, JEP: General 1.9) relative to high-volume journals.
+  Prominent flagship journals stay in tier 1 even where their SJR is modest.
   Tier 1 — flagship / top-ranked:
           Nature, Science (SJR 10.4), Nature Human Behaviour (SJR 4.9; AJG 4), Science Advances (SJR 4.3),
-          PNAS (SJR 3.3), JPSP (SJR 3.9), Psychological Science (SJR 2.5; FT50),
-          Management Science (SJR 5.7), OBHDP (SJR 2.4–3.2), CHI (CORE A*)
+          Nature Communications, PNAS (SJR 3.3), JPSP (SJR 3.9), Psychological Science (SJR 2.5; FT50),
+          JEP: General (SJR 1.9; APA flagship), Management Science (SJR 5.7), OBHDP (SJR 2.4–3.2),
+          CHI (CORE A*)
   Tier 2 — strong, field-leading:
-          JEP: General (SJR 1.9), PSPB (SJR 2.2), Cognition (SJR 1.7), Computers in Human Behavior
-          (SJR 3.1, high-volume), CSCW (CORE A), Nature Communications, PNAS Nexus, Communications
-          Psychology, JESP, Journal of Consumer Research, Journal of Marketing Research
-          (the last six placed by reputation; values not verified)
+          PSPB (SJR 2.2), Cognition (SJR 1.7), Computers in Human Behavior (SJR 3.1, high-volume),
+          CSCW (CORE A), PNAS Nexus, Communications Psychology, JESP, Journal of Consumer Research,
+          Journal of Marketing Research (the last five placed by reputation; values not verified)
   Tier 3 — solid peer-reviewed:
           Journal of Behavioral Decision Making (SJR 0.85), Judgment and Decision Making (SJR ~1.1),
           International Journal of Human-Computer Interaction (SJR 1.4), Collabra, Royal Society Open
