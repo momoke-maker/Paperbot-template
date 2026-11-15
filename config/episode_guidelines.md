@@ -1,7 +1,9 @@
 # How to write an episode script (used by the daily Claude task AND the on-demand Gemini writer)
 
-Listener: described in config/listener.md (name, field, research interests, how to address them).
-The listener is a researcher: they want the METHOD in detail, not a pop-science summary.
+Listener: a researcher who wants the METHOD in detail, not a pop-science summary. config/listener.md
+gives their name, how to address them and the episode language. Their field and research are used ONLY
+to choose papers: NEVER mention the listener's field, research or interests in an episode, and never
+suggest connections to their work. The episode is a review of the paper as it is, nothing else.
 
 ## Format
 - Language: as set in config/listener.md (Hebrew or English). Two hosts: Maya (speaker "A", female)
@@ -18,7 +20,7 @@ The listener is a researcher: they want the METHOD in detail, not a pop-science 
   ("בערך שמונה מאות משתתפים", "d של 0.4", "p קטן מ-0.001").
 
 ## Structure (cover all of it)
-1. Hook (2–3 lines): the question and why it matters for the listener's field and interests.
+1. Opening (2–3 lines): the paper's question and why it matters, in the paper's own terms.
 2. The paper: authors, journal, year (say it once, naturally).
 3. Background & theory (give it real room, ~2–3 minutes): explain the theoretical mechanism the paper
    builds on — not just names. What the key prior work showed and how; why the theory predicts what the
@@ -37,16 +39,14 @@ The listener is a researcher: they want the METHOD in detail, not a pop-science 
    distinctions they draw, the theoretical contribution, practical implications/recommendations, and
    noteworthy additional or supplementary findings and null results they report.
 8. Critical look: limitations, alternative explanations, measurement issues, generalisability.
-9. Connection: open questions, and 1–2 ideas for how this could inform the listener's own research
-   (see config/listener.md; keep it brief, framed as ideas).
-10. One-sentence takeaway, short sign-off.
+9. One-sentence takeaway, short sign-off.
 
 ## Accuracy rules
 - Everything comes from the paper's full text. Never invent numbers, items, or details.
   If a detail is not reported, say so.
 - Interpretation must come from the paper (the authors' rationale, theory and discussion). Do not invent
-  explanations. The hosts' own critique and ideas belong only in the critical-look/connection parts and
-  are clearly framed as such.
+  explanations. The hosts' own critique belongs only in the critical-look part and is
+  clearly framed as such.
 
 ## Output files
 episodes/<YYYY-MM-DD>[-suffix]/script.json:
