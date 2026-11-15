@@ -22,7 +22,8 @@ What only the user can do (guide them; exact clicks are in README.md):
 
 What you do yourself, in this order:
 A. **Profile.** Ask: episodes in Hebrew or English? Their name (spelling as it should be spoken, and
-   how to address them: female/male), role, field, and their own research; topics that interest them.
+   how to address them: female/male), role, field, and their own research; topics that interest them
+   (field and research are used only to choose papers, never mentioned in episodes).
    Offer to use a CV, research proposal or paper list they attach. Fill config/listener.md (keep the
    `- language: he|en` line machine-readable) and config/topics.md. Review the journal tiers in
    topics.md for their field and propose changes. Optionally fill config/library.md with papers they
