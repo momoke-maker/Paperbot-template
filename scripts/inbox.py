@@ -13,6 +13,28 @@ UA = {"User-Agent": "Mozilla/5.0 (paperbot; personal use)"}
 MAX_PDF_BYTES = 18 * 1024 * 1024   # Gemini accepts up to ~20 MB of inline data per request
 WRITER_BUDGET_SEC = 20 * 60        # total time for writing the script, across models and retries
 SKIP_MODELS = ("tts", "image", "live", "embed", "audio", "lite", "nano", "gemma", "robotics", "computer")
+MESSAGES = {
+    "he": {"got_pdf": "📥 קיבלתי את המאמר! הפרק יגיע בעוד 5–10 דקות.",
+           "got_link": "🔗 קיבלתי את הקישור, בודק אם יש גישה ל-PDF המלא...",
+           "paywalled": "🔒 לא הצלחתי להגיע ל-PDF המלא (כנראה מאמר בתשלום). אפשר להוריד אותו דרך "
+                        "האוניברסיטה ולשלוח לי את הקובץ עצמו.",
+           "too_big": "הקובץ גדול מדי (מעל 18MB)",
+           "not_pdf": "הקובץ לא נראה כמו PDF תקין",
+           "no_download": "לא הצלחתי להוריד את הקובץ מטלגרם",
+           "failed": "😕 משהו השתבש ביצירת הפרק: "},
+    "en": {"got_pdf": "📥 Got the paper! The episode will arrive in 5–10 minutes.",
+           "got_link": "🔗 Got the link, checking whether the full PDF is accessible...",
+           "paywalled": "🔒 I couldn't reach the full PDF (probably paywalled). You can download it through "
+                        "your university and send me the file itself.",
+           "too_big": "The file is too large (over 18MB)",
+           "not_pdf": "The file doesn't look like a valid PDF",
+           "no_download": "I couldn't download the file from Telegram",
+           "failed": "😕 Something went wrong while making the episode: "},
+}
+
+
+def t(key):
+    return MESSAGES[me.language()][key]
 
 
 def reply(chat_id, text, reply_to=None):
@@ -32,7 +54,7 @@ def download(url, **kw):
         for block in r.iter_content(1 << 16):
             data += block
             if len(data) > MAX_PDF_BYTES:
-                raise ValueError("הקובץ גדול מדי (מעל 18MB)")
+                raise ValueError(t("too_big"))
         return data, r.headers.get("content-type", "")
 
 
@@ -46,14 +68,14 @@ def fetch_pdf(url):
 
 def pdf_from_telegram(doc):
     if doc.get("file_size", 0) > MAX_PDF_BYTES:
-        raise ValueError("הקובץ גדול מדי (מעל 18MB)")
+        raise ValueError(t("too_big"))
     info = requests.post(me.telegram("getFile"), data={"file_id": doc["file_id"]}, timeout=60).json()
     if not info.get("ok"):
-        raise RuntimeError("לא הצלחתי להוריד את הקובץ מטלגרם")
+        raise RuntimeError(t("no_download"))
     token = me.secret("TELEGRAM_BOT_TOKEN")
     data, _ = download(f"https://api.telegram.org/file/bot{token}/{info['result']['file_path']}")
     if data[:5] != b"%PDF-":
-        raise RuntimeError("הקובץ לא נראה כמו PDF תקין")
+        raise RuntimeError(t("not_pdf"))
     return data
 
 
@@ -153,14 +175,13 @@ def handle(msg):
     doc = msg.get("document") or {}
     urls = re.findall(r"https?://\S+", text)
     if doc.get("mime_type") == "application/pdf" or doc.get("file_name", "").lower().endswith(".pdf"):
-        reply(cid, "📥 קיבלתי את המאמר! הפרק יגיע בעוד 5–10 דקות.", mid)
+        reply(cid, t("got_pdf"), mid)
         pdf = pdf_from_telegram(doc)
     elif urls and not msg.get("reply_to_message"):
-        reply(cid, "🔗 קיבלתי את הקישור, בודק אם יש גישה ל-PDF המלא...", mid)
+        reply(cid, t("got_link"), mid)
         pdf = pdf_from_url(urls[0])
         if not pdf:
-            reply(cid, "🔒 לא הצלחתי להגיע ל-PDF המלא (כנראה מאמר בתשלום). אפשר להוריד אותו דרך האוניברסיטה "
-                       "ולשלוח לי את הקובץ עצמו.", mid)
+            reply(cid, t("paywalled"), mid)
             return
     else:
         return  # a note: nothing to do
@@ -171,7 +192,7 @@ def handle(msg):
     with open(os.path.join(ep, "source.pdf"), "wb") as fh:
         fh.write(pdf)
     me.write_json(os.path.join(ep, "meta.json"), {**data["meta"], "source": "request", "script_model": model})
-    me.write_json(os.path.join(ep, "script.json"), {"speakers": me.DEFAULT_SPEAKERS, "lines": data["lines"]})
+    me.write_json(os.path.join(ep, "script.json"), {"speakers": me.default_speakers(), "lines": data["lines"]})
     status = me.process(ep)
     if status.get("telegram") != "sent":
         raise RuntimeError(status.get("error", "sending failed")[-300:])
@@ -190,7 +211,7 @@ def main():
         handle(msg)
     except Exception as e:
         print(me.redact(e))
-        reply(str(msg["chat"]["id"]), f"😕 משהו השתבש ביצירת הפרק: {me.redact(e)[:300]}", msg.get("message_id"))
+        reply(str(msg["chat"]["id"]), t("failed") + me.redact(e)[:300], msg.get("message_id"))
         sys.exit(1)
 
 

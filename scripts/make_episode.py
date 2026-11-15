@@ -1,8 +1,9 @@
 """Render episodes/<id>/script.json to episode.mp3 and send it to Telegram.
 
 Runs in GitHub Actions (secrets: GEMINI_API_KEY, TELEGRAM_BOT_TOKEN). Handles every episode folder
-that has a script.json and hasn't been delivered yet (at most MAX_ATTEMPTS tries per episode). Voices: Gemini multi-speaker TTS, with the free edge-tts
-Hebrew voices as a fallback so an episode is always delivered.
+that has a script.json and hasn't been delivered yet (at most MAX_ATTEMPTS tries per episode).
+Voices: Gemini multi-speaker TTS, with the free edge-tts voices as a fallback. Language (Hebrew or
+English) comes from config/listener.md.
 """
 import asyncio, base64, glob, json, os, re, subprocess, sys, tempfile, time, traceback
 import requests
@@ -15,18 +16,36 @@ CHUNK_CHARS = 3500          # text per TTS request
 SR = 24000                  # Gemini returns 24 kHz 16-bit mono PCM
 GEMINI_BUDGET_SEC = 15 * 60  # after this, switch to edge-tts so the job never hits its timeout
 MAX_ATTEMPTS = 2            # an episode that failed this many times is skipped (no endless retries)
-DEFAULT_SPEAKERS = {
-    "A": {"label": "Maya", "gemini_voice": "Kore", "edge_voice": "he-IL-HilaNeural"},
-    "B": {"label": "Daniel", "gemini_voice": "Puck", "edge_voice": "he-IL-AvriNeural"},
+LISTENER_FILE = os.path.join(ROOT, "config", "listener.md")
+VOICES = {  # two hosts per language; Gemini voices are multilingual, edge-tts voices are per language
+    "he": {"A": {"label": "Maya", "gemini_voice": "Kore", "edge_voice": "he-IL-HilaNeural"},
+           "B": {"label": "Daniel", "gemini_voice": "Puck", "edge_voice": "he-IL-AvriNeural"}},
+    "en": {"A": {"label": "Maya", "gemini_voice": "Kore", "edge_voice": "en-US-AriaNeural"},
+           "B": {"label": "Daniel", "gemini_voice": "Puck", "edge_voice": "en-US-GuyNeural"}},
 }
-STYLE = (
-    "Read the following two-host podcast conversation aloud in natural, fluent Israeli Hebrew. "
-    "Warm, calm, conversational tone, like two researchers talking over morning coffee; "
-    "clear pronunciation of English technical terms. Do not add or skip words.\n\n"
-)
+STYLES = {
+    "he": "Read the following two-host podcast conversation aloud in natural, fluent Israeli Hebrew. ",
+    "en": "Read the following two-host podcast conversation aloud in natural, fluent English. ",
+}
+STYLE_TAIL = ("Warm, calm, conversational tone, like two researchers talking over morning coffee; "
+              "clear pronunciation of technical terms. Do not add or skip words.\n\n")
 
 
 # ---------------- helpers ----------------
+def language():
+    """Episode language from config/listener.md ("- language: he" or "- language: en"); Hebrew by default."""
+    if os.path.exists(LISTENER_FILE):
+        with open(LISTENER_FILE, encoding="utf-8") as fh:
+            m = re.search(r"^\W*language:\s*(he|en)\b", fh.read(), re.M | re.I)
+            if m:
+                return m.group(1).lower()
+    return "he"
+
+
+def default_speakers():
+    return VOICES[language()]
+
+
 def log(*a):
     print(*a, flush=True)
 
@@ -102,7 +121,7 @@ def tts_request(model, speakers, chunk, per_part):
         parts = [{"text": l["text"], "speechMetadata": {"speaker": speakers[l["s"]]["label"]}} for l in chunk]
     else:
         convo = "\n".join(f'{speakers[l["s"]]["label"]}: {l["text"]}' for l in chunk)
-        parts = [{"text": STYLE + convo}]
+        parts = [{"text": STYLES[language()] + STYLE_TAIL + convo}]
     voices = [{"speaker": s["label"], "voiceConfig": {"prebuiltVoiceConfig": {"voiceName": s["gemini_voice"]}}}
               for s in speakers.values()]
     return {"contents": [{"parts": parts}],
@@ -207,18 +226,22 @@ def esc(s):
     return str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
+def short_title(meta):  # "title_he"/"summary_he": field names used by episodes made before Nov 2026
+    return meta.get("title_short") or meta.get("title_he") or meta.get("title") or "Paperbot"
+
+
 def caption(meta, limit=1024):
     """HTML caption that always fits Telegram's limit without cutting a tag in half."""
-    title = meta.get("title_he") or meta.get("title") or "Paperbot"
+    title = short_title(meta)
     head = [f"<b>{esc(title)}</b>"]
-    if meta.get("title_he") and meta.get("title"):
+    if meta.get("title") and meta["title"] != title:
         head.append(esc(meta["title"]))
     source = " · ".join(str(x) for x in (meta.get("authors"), meta.get("journal"), meta.get("year")) if x)
     if source:
         head.append(f"<i>{esc(source)}</i>")
     text = "\n".join(head)[:limit]
     link = f"\n\n{esc(meta['link'])}" if meta.get("link") else ""
-    summary = meta.get("summary_he", "")
+    summary = meta.get("summary") or meta.get("summary_he") or ""
     while summary and len(text) + len(link) + len(esc(summary)) + 2 > limit:
         summary = summary[:-20].rstrip() + "…" if len(summary) > 21 else ""
     if summary:
@@ -229,7 +252,7 @@ def caption(meta, limit=1024):
 def send(meta, mp3, duration):
     cap = caption(meta)
     data = {"chat_id": chat_id(), "caption": cap, "parse_mode": "HTML",
-            "title": (meta.get("title_he") or meta.get("title") or "Paperbot")[:60],
+            "title": short_title(meta)[:60],
             "performer": "Paperbot", "duration": int(duration)}
     for attempt in range(2):
         with open(mp3, "rb") as fh:
@@ -267,6 +290,7 @@ def process(ep_dir):
               "started": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
     try:
         script = read_json(os.path.join(ep_dir, "script.json"))
+        script.setdefault("speakers", default_speakers())
         meta = read_json(os.path.join(ep_dir, "meta.json"))
         wav, mp3 = os.path.join(ep_dir, "episode.wav"), os.path.join(ep_dir, "episode.mp3")
         if not os.path.exists(mp3):  # rendered on an earlier attempt -> only (re)send
@@ -277,7 +301,7 @@ def process(ep_dir):
                 log("Gemini failed, using edge-tts:", status["gemini_error"])
                 tts_edge(script, wav, status)
             run(["ffmpeg", "-y", "-i", wav, "-ac", "1", "-b:a", "64k",
-                 "-metadata", f"title={meta.get('title_he') or meta.get('title', '')}", mp3])
+                 "-metadata", f"title={short_title(meta)}", mp3])
             os.remove(wav)
         status["duration_sec"] = round(duration_of(mp3))
         send(meta, mp3, status["duration_sec"])

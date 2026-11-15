@@ -29,8 +29,8 @@ function checkTelegram() {
       if (!msg || String(msg.chat.id) !== chat || !wantsEpisode(msg)) return;
       const code = startEpisode(props.getProperty('GH_TOKEN'), msg);
       if (code !== 204) {
-        notify(token, chat, '⚠️ לא הצלחתי להפעיל את יצירת הפרק (GitHub החזיר ' + code + '). ' +
-          'אם עברה שנה מההקמה, כנראה שפג תוקף ה-GH_TOKEN וצריך ליצור חדש (README, שלב 9).');
+        notify(token, chat, '⚠️ GitHub rejected the episode request (' + code + '). If setup was about a ' +
+          'year ago, GH_TOKEN has probably expired: create a new one and update it in the script properties.');
       }
     });
   } finally {

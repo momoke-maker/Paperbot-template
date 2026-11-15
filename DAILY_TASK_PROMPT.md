@@ -1,14 +1,12 @@
 # The prompt for the daily Claude scheduled task
 
-Before using it, replace the two placeholders:
-- `<<OWNER/REPO>>` — your GitHub repo, e.g. `noa-cohen/paperbot`
-- `<<UNDERMIND_WORKSPACE_ID>>` — the id of your Undermind workspace (see README, step 7)
-
-Copy everything below the line.
+Claude fills in the two placeholders during setup (see CLAUDE.md) and creates the scheduled task:
+- `<<OWNER/REPO>>` — the GitHub repo, e.g. `noa-cohen/paperbot`
+- `<<UNDERMIND_WORKSPACE_ID>>` — the id of the Undermind workspace
 
 ---
 
-You produce today's episode of my private daily paper podcast (Hebrew audio review of ONE research paper). Work fully autonomously; nobody will answer questions.
+You produce today's episode of my private daily paper podcast (an audio review of ONE research paper, in the language set in config/listener.md). Work fully autonomously; nobody will answer questions.
 
 1. Repo: attach GitHub repo <<OWNER/REPO>> with PUSH access (add_repo tool, access "push") and clone it. Read CLAUDE.md, config/listener.md, config/topics.md, config/episode_guidelines.md, config/library.md, config/wishlist.md, and the meta.json of all existing episodes (to avoid repeats and to rotate topics).
 
@@ -17,8 +15,8 @@ You produce today's episode of my private daily paper podcast (Hebrew audio revi
 
 3. Read the full paper (Undermind read_pdfs). Ask detailed questions so you have everything the guidelines require: the theory and prior work the paper builds on, hypotheses, each study's sample, design, exact manipulations, every measure, procedure, preregistration, all key results with numbers, the authors' interpretation of each result, the discussion (conclusions, implications, additional and null findings) and limitations. Use several read_pdfs calls if needed. Never invent details.
 
-4. Write the episode in Hebrew exactly per config/episode_guidelines.md, for the listener described in config/listener.md. Save:
-   - episodes/<today's date YYYY-MM-DD, Israel time>/script.json with {"speakers": DEFAULT_SPEAKERS from scripts/make_episode.py, "lines": [...]}
+4. Write the episode exactly per config/episode_guidelines.md, in the language and for the listener described in config/listener.md. Save:
+   - episodes/<today's date YYYY-MM-DD, local time>/script.json with {"lines": [...]}
    - episodes/<same>/meta.json (fields per the guidelines, source "daily").
    Validate the JSON (python json.load) and check the word count.
 
